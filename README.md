@@ -43,7 +43,7 @@ Your app keeps its own action type and its own storage. Implement `shortcuts::Sh
 
 The scope also decides what Reset All covers: every tab in the same mode, or only the Global tab itself.
 
-This is behind the `shortcuts` feature, which is off by default because it pulls in [live-region](https://github.com/accessware/live-region) for the announcements. The chord type is [key-chord](https://github.com/trypsynth/key-chord), re-exported as `shortcuts::KeyChord`.
+This is behind the `shortcuts` feature, which is off by default because it pulls in [live-region](https://github.com/accessware/live-region) for the announcements. The chord type is [key-chord](https://github.com/accessware/key-chord), re-exported as `shortcuts::KeyChord`.
 
 ### Global hotkeys
 
