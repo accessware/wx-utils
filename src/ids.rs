@@ -10,14 +10,14 @@
 /// ```
 #[macro_export]
 macro_rules! seq_ids {
-    ($base:expr => $($name:ident),+ $(,)?) => {
-        $crate::seq_ids!(@step $base; $($name),+);
-    };
-    (@step $n:expr; $name:ident) => {
-        pub const $name: i32 = $n;
-    };
-    (@step $n:expr; $name:ident, $($rest:ident),+) => {
-        pub const $name: i32 = $n;
-        $crate::seq_ids!(@step $n + 1; $($rest),+);
-    };
+	($base:expr => $($name:ident),+ $(,)?) => {
+		$crate::seq_ids!(@step $base; $($name),+);
+	};
+	(@step $n:expr; $name:ident) => {
+		pub const $name: i32 = $n;
+	};
+	(@step $n:expr; $name:ident, $($rest:ident),+) => {
+		pub const $name: i32 = $n;
+		$crate::seq_ids!(@step $n + 1; $($rest),+);
+	};
 }
