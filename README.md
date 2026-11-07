@@ -20,6 +20,7 @@ Build and lay out a standard OK/Cancel row in two steps, which are meant to be u
 * `add_ok_cancel_footer` (and `add_single_button_footer`, for a single dismiss button) then lays the buttons out with a native `wxStdDialogButtonSizer`. That sizer is what enforces the platform's order (Cancel then OK on macOS, OK then Cancel on Windows), whatever order you pass the buttons in.
 * `bind_enter_confirms` submits a dialog when the user presses Enter in a text or spin control.
 * `build_yes_no_buttons` and `add_yes_no_footer` are the Yes/No counterparts, and `confirm` is the whole dialog in one call.
+* `ask` is a question with two buttons you label and Cancel, such as Accept, Reject and Cancel. It returns an `Answer`.
 * `DIALOG_PADDING` is the padding these functions use, exposed so your own sizers can match. `dialog_padding` returns it scaled for the display that the given window is on, using wxDragon's `WxWidget::from_dip_int`.
 
 Each `build_*_buttons` function has an `_on` variant that parents the buttons to a `Panel` (or any other window) instead of to the dialog itself, for dialogs whose content lives in a panel.

@@ -168,6 +168,51 @@ pub fn confirm(parent: &dyn WxWidget, message: &str, title: &str) -> bool {
 	dialog.show_modal() == ID_YES
 }
 
+/// What the user chose in [`ask`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Answer {
+	/// The first button.
+	Yes,
+	/// The second button.
+	No,
+	/// Cancel, Escape, or closing the dialog.
+	Cancel,
+}
+
+/// Shows a modal question with two buttons you label, and Cancel.
+///
+/// Label the buttons with what they do, such as "&Accept" and "&Reject", so the message doesn't have to explain them. Like [`confirm`], every label is in the app's language, which a `MessageDialog` with `YesNo` and `Cancel` can't promise on Windows. Escape and closing the dialog both mean [`Answer::Cancel`].
+#[must_use]
+pub fn ask(parent: &dyn WxWidget, message: &str, title: &str, yes_label: &str, no_label: &str) -> Answer {
+	let dialog = Dialog::builder(parent, title).build();
+	let padding = dialog_padding(&dialog);
+	let label = StaticText::builder(&dialog).with_label(message).build();
+	let yes_button = Button::builder(&dialog).with_id(ID_YES).with_label(yes_label).build();
+	let no_button = Button::builder(&dialog).with_id(ID_NO).with_label(no_label).build();
+	// TRANSLATORS: Label for the cancellation button
+	let cancel_button = Button::builder(&dialog).with_id(ID_CANCEL).with_label(&t("Cancel")).build();
+	dialog.set_escape_id(ID_CANCEL);
+	dialog.set_affirmative_id(ID_YES);
+	yes_button.set_default();
+	// wx ends the dialog by itself only for the affirmative and escape buttons.
+	no_button.on_click(move |_| dialog.end_modal(ID_NO));
+	let content = BoxSizer::builder(Orientation::Vertical).build();
+	content.add(&label, 0, SizerFlag::All, padding);
+	let button_sizer = StdDialogButtonSizerBuilder::new().build();
+	button_sizer.add_button(&yes_button);
+	button_sizer.add_button(&no_button);
+	button_sizer.add_button(&cancel_button);
+	button_sizer.realize();
+	content.add_sizer(&button_sizer, 0, SizerFlag::Expand | SizerFlag::All, padding);
+	dialog.set_sizer_and_fit(content, true);
+	dialog.centre();
+	match dialog.show_modal() {
+		ID_YES => Answer::Yes,
+		ID_NO => Answer::No,
+		_ => Answer::Cancel,
+	}
+}
+
 /// Shows a modal integer-entry dialog with a label and a bounded spin control.
 ///
 /// Returns `None` if the user cancels. Pressing Enter submits the dialog.
