@@ -1,6 +1,6 @@
 [package]
 name = "wx-utils"
-version = "0.4.5"
+version = "0.5.0"
 description = "Utilities to ease development of cross-platform desktop apps with wxDragon."
 license = "MIT"
 readme = "README.md"
@@ -19,8 +19,8 @@ global-hotkeys = ["dep:key-chord", "dep:windows"]
 [dependencies]
 key-chord = { version = "0.2.2", optional = true }
 live-region = { version = "0.3.3", optional = true }
-patois = "0.2.3"
-wxdragon = { version = "0.9.22", default-features = false }
+patois = "0.3.0"
+wxdragon = { version = "0.9.24", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62.2", optional = true, features = [
