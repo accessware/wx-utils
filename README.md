@@ -21,7 +21,7 @@ Build and lay out a standard OK/Cancel row in two steps, which are meant to be u
 * `bind_enter_confirms` submits a dialog when the user presses Enter in a text or spin control.
 * `build_yes_no_buttons` and `add_yes_no_footer` are the Yes/No counterparts, and `confirm` is the whole dialog in one call.
 * `ask` is a question with two buttons you label and Cancel, such as Accept, Reject and Cancel. It returns an `Answer`.
-* `DIALOG_PADDING` is the padding these functions use, exposed so your own sizers can match. `dialog_padding` returns it scaled for the display that the given window is on, using wxDragon's `WxWidget::from_dip_int`.
+* `dialog_padding` returns the padding these functions use, scaled for the display that the given window is on, so your own sizers can match.
 
 Each `build_*_buttons` function has an `_on` variant that parents the buttons to a `Panel` (or any other window) instead of to the dialog itself, for dialogs whose content lives in a panel.
 
@@ -88,7 +88,7 @@ To try it, run `cargo run --example progress`. The example shows fake downloads.
 
 ## Translation
 
-wx-utils is marked `[package.metadata.patois] translatable = true`. If your app uses [patois](https://github.com/accessware/patois) and calls `patois_build::gen_pot` over your workspace, wx-utils's own translatable strings, such as "Cancel", are added to your app's catalog automatically. You don't need to set anything up.
+wx-utils is marked `[package.metadata.patois] translatable = true`. If your app uses [patois](https://github.com/accessware/patois) and calls `patois_build::gen_pot` over your workspace, wx-utils's own translatable strings, such as "Cancel", are added to your app's catalog automatically. You don't need to set anything up. Your app must use the same version of patois as wx-utils: patois 0.3 for wx-utils 0.5. With another version, Cargo builds two copies of patois, and these strings stay in English.
 
 ## Quick start
 

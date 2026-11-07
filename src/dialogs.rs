@@ -3,14 +3,10 @@ use std::fmt::Display;
 use patois::t;
 use wxdragon::prelude::*;
 
-/// Default padding used between widgets and dialog edges, in device-independent pixels.
-///
-/// This is the value at 100% display scaling. Pass it through [`WxWidget::from_dip_int`] before
-/// handing it to a sizer, or use [`dialog_padding`], which does that for you. On a 150%
-/// display, a raw 10 here is two-thirds of the intended gap.
-pub const DIALOG_PADDING: i32 = 10;
+/// The padding between widgets and dialog edges at 100% display scaling. Private, so callers can only get it scaled through [`dialog_padding`].
+const DIALOG_PADDING: i32 = 10;
 
-/// [`DIALOG_PADDING`] scaled for the display `reference` is on.
+/// The padding between widgets and dialog edges that these functions use, scaled for the display `reference` is on, so your own sizers can match.
 ///
 /// Read it once per dialog and reuse it, rather than calling this at every sizer `add`.
 #[must_use]
@@ -155,10 +151,10 @@ pub fn bind_enter_confirms<W: WxEvtHandler>(dialog: &Dialog, ctrl: W) {
 /// language rather than the app's (see [`build_yes_no_buttons`]). Escape and closing the
 /// dialog both mean No.
 #[must_use]
-pub fn confirm(parent: &dyn WxWidget, message: &str, title: &str) -> bool {
+pub fn confirm(parent: &dyn WxWidget, message: impl Display, title: &str) -> bool {
 	let dialog = Dialog::builder(parent, title).build();
 	let padding = dialog_padding(&dialog);
-	let label = StaticText::builder(&dialog).with_label(message).build();
+	let label = StaticText::builder(&dialog).with_label(&message.to_string()).build();
 	let (yes_button, no_button) = build_yes_no_buttons(&dialog);
 	let content = BoxSizer::builder(Orientation::Vertical).build();
 	content.add(&label, 0, SizerFlag::All, padding);
@@ -183,10 +179,10 @@ pub enum Answer {
 ///
 /// Label the buttons with what they do, such as "&Accept" and "&Reject", so the message doesn't have to explain them. Like [`confirm`], every label is in the app's language, which a `MessageDialog` with `YesNo` and `Cancel` can't promise on Windows. Escape and closing the dialog both mean [`Answer::Cancel`].
 #[must_use]
-pub fn ask(parent: &dyn WxWidget, message: &str, title: &str, yes_label: &str, no_label: &str) -> Answer {
+pub fn ask(parent: &dyn WxWidget, message: impl Display, title: &str, yes_label: &str, no_label: &str) -> Answer {
 	let dialog = Dialog::builder(parent, title).build();
 	let padding = dialog_padding(&dialog);
-	let label = StaticText::builder(&dialog).with_label(message).build();
+	let label = StaticText::builder(&dialog).with_label(&message.to_string()).build();
 	let yes_button = Button::builder(&dialog).with_id(ID_YES).with_label(yes_label).build();
 	let no_button = Button::builder(&dialog).with_id(ID_NO).with_label(no_label).build();
 	// TRANSLATORS: Label for the cancellation button
@@ -220,7 +216,7 @@ pub fn ask(parent: &dyn WxWidget, message: &str, title: &str, yes_label: &str, n
 pub fn prompt_number(
 	parent: &dyn WxWidget,
 	title: &str,
-	label: &str,
+	label: impl Display,
 	ok_label: &str,
 	min: i32,
 	max: i32,
@@ -228,7 +224,7 @@ pub fn prompt_number(
 ) -> Option<i32> {
 	let max = max.max(min);
 	let dialog = Dialog::builder(parent, title).build();
-	let lbl = StaticText::builder(&dialog).with_label(label).build();
+	let lbl = StaticText::builder(&dialog).with_label(&label.to_string()).build();
 	let ctrl = SpinCtrl::builder(&dialog)
 		.with_range(min, max)
 		.with_style(SpinCtrlStyle::Default | SpinCtrlStyle::ProcessEnter)
@@ -253,8 +249,8 @@ pub fn prompt_number(
 ///
 /// Returns `None` if the user cancels or enters only whitespace.
 #[must_use]
-pub fn prompt_text(parent: &dyn WxWidget, message: &str, title: &str) -> Option<String> {
-	let dialog = TextEntryDialog::builder(parent, message, title)
+pub fn prompt_text(parent: &dyn WxWidget, message: impl Display, title: &str) -> Option<String> {
+	let dialog = TextEntryDialog::builder(parent, &message.to_string(), title)
 		.with_style(TextEntryDialogStyle::Default | TextEntryDialogStyle::ProcessEnter)
 		.build();
 	if dialog.show_modal() != ID_OK {
