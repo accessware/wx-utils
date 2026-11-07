@@ -18,18 +18,24 @@ pub fn dialog_padding(reference: &dyn WxWidget) -> i32 {
 	reference.from_dip_int(DIALOG_PADDING)
 }
 
-/// Shows a modal error dialog.
+/// Shows a modal error dialog, centred on `parent`.
 pub fn show_error(parent: &dyn WxWidget, message: impl Display, title: &str) {
-	let dialog = MessageDialog::builder(parent, &message.to_string(), title)
-		.with_style(MessageDialogStyle::OK | MessageDialogStyle::IconError)
-		.build();
-	dialog.show_modal();
+	show_message(parent, message, title, MessageDialogStyle::IconError);
 }
 
-/// Shows a modal warning dialog.
+/// Shows a modal warning dialog, centred on `parent`.
 pub fn show_warning(parent: &dyn WxWidget, message: impl Display, title: &str) {
+	show_message(parent, message, title, MessageDialogStyle::IconWarning);
+}
+
+/// Shows a modal information dialog, centred on `parent`.
+pub fn show_info(parent: &dyn WxWidget, message: impl Display, title: &str) {
+	show_message(parent, message, title, MessageDialogStyle::IconInformation);
+}
+
+fn show_message(parent: &dyn WxWidget, message: impl Display, title: &str, icon: MessageDialogStyle) {
 	let dialog = MessageDialog::builder(parent, &message.to_string(), title)
-		.with_style(MessageDialogStyle::OK | MessageDialogStyle::IconWarning)
+		.with_style(MessageDialogStyle::OK | icon | MessageDialogStyle::Centre)
 		.build();
 	dialog.show_modal();
 }

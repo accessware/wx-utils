@@ -12,6 +12,8 @@ use std::{
 
 use wxdragon::{ffi, prelude::*, window::WxWidget};
 
+use crate::post_to_ui;
+
 mod ending;
 mod handle;
 mod lifecycle;
@@ -241,11 +243,6 @@ fn show_question(shared: Arc<Shared>, question: Question) {
 		Some(update) => question.show(update.dialog()),
 		None => post_question(shared, question),
 	});
-}
-
-fn post_to_ui(callback: impl FnOnce() + Send + 'static) {
-	wxdragon::call_after(Box::new(callback));
-	wxdragon::wake_up_idle();
 }
 
 /// A window handle that can cross threads. It is only turned back into a pointer on the main

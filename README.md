@@ -66,7 +66,11 @@ This is behind the `global-hotkeys` feature. Only Windows is implemented. On oth
 
 * `prompt_number` shows a dialog with a labeled spin control, and returns the value entered, or `None` if the user cancels.
 * `prompt_text` shows a single-line text entry dialog, and returns the trimmed value, or `None` if the user cancels or leaves it blank.
-* `show_error` and `show_warning` show a modal message dialog with the matching icon.
+* `show_error`, `show_warning` and `show_info` show a modal message dialog with the matching icon, centred on its parent.
+
+### Running code on the UI thread
+
+`post_to_ui` runs a closure on the UI thread from any other thread. `wxdragon::call_after` alone only queues it, and an idle event loop doesn't run the queue until the next event, such as the mouse moving. `post_to_ui` also wakes the loop, so a worker thread's result shows up at once.
 
 ### Progress window
 
