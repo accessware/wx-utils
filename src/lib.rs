@@ -1,5 +1,3 @@
-#![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
-
 mod about;
 mod dialogs;
 mod duration;
