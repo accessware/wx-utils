@@ -91,9 +91,33 @@ pub fn run_with_progress<T: Send + 'static>(
 	work: impl FnOnce(&Progress) -> T + Send + 'static,
 	done: impl FnOnce(T, Ended) + 'static,
 ) {
+	submit(parent, title, message, true, work, done);
+}
+
+/// [`run_with_progress`] without the estimate of the time remaining, for work whose length can't be known, such as a single network request.
+///
+/// wxWidgets can't estimate such work, so the window would show "Remaining time: unknown" the whole time it's open.
+pub fn run_without_estimate<T: Send + 'static>(
+	parent: &dyn WxWidget,
+	title: &str,
+	message: &str,
+	work: impl FnOnce(&Progress) -> T + Send + 'static,
+	done: impl FnOnce(T, Ended) + 'static,
+) {
+	submit(parent, title, message, false, work, done);
+}
+
+fn submit<T: Send + 'static>(
+	parent: &dyn WxWidget,
+	title: &str,
+	message: &str,
+	estimate: bool,
+	work: impl FnOnce(&Progress) -> T + Send + 'static,
+	done: impl FnOnce(T, Ended) + 'static,
+) {
 	let parent = ParentWindow::new(parent);
 	let (title, message) = (title.to_owned(), message.to_owned());
-	let start: Start = Box::new(move || begin(parent, &title, &message, work, done));
+	let start: Start = Box::new(move || begin(parent, &title, &message, estimate, work, done));
 	if let Some(start) = RUNS.with_borrow_mut(|runs| runs.submit(start)) {
 		start();
 	}
@@ -103,17 +127,15 @@ fn begin<T: Send + 'static>(
 	parent: ParentWindow,
 	title: &str,
 	message: &str,
+	estimate: bool,
 	work: impl FnOnce(&Progress) -> T + Send + 'static,
 	done: impl FnOnce(T, Ended) + 'static,
 ) {
-	let dialog = ProgressDialog::builder(&parent, title, message, 100)
-		.with_style(
-			ProgressDialogStyle::AutoHide
-				| ProgressDialogStyle::AppModal
-				| ProgressDialogStyle::RemainingTime
-				| ProgressDialogStyle::CanAbort,
-		)
-		.build();
+	let mut style = ProgressDialogStyle::AutoHide | ProgressDialogStyle::AppModal | ProgressDialogStyle::CanAbort;
+	if estimate {
+		style |= ProgressDialogStyle::RemainingTime;
+	}
+	let dialog = ProgressDialog::builder(&parent, title, message, 100).with_style(style).build();
 	ENDING.set(Ending::new());
 	notice_destruction(&dialog);
 	DIALOG.with(|lifecycle| lifecycle.set(dialog));

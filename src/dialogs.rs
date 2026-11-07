@@ -130,6 +130,30 @@ pub fn add_single_button_footer(content_sizer: BoxSizer, button: Button) {
 	content_sizer.add_sizer(&button_sizer, 0, SizerFlag::Expand | SizerFlag::All, dialog_padding(&button));
 }
 
+/// Shows `text` in a read-only box with a Close button, such as a report before it's sent or a document's details.
+///
+/// The box has the focus, so a screen reader user can read the text line by line, and Escape closes the window. It holds long text, such as a whole log, on every platform.
+pub fn show_text(parent: &dyn WxWidget, title: &str, text: &str) {
+	let dialog = Dialog::builder(parent, title).build();
+	let padding = dialog_padding(&dialog);
+	let text_ctrl = TextCtrl::builder(&dialog)
+		.with_value(text)
+		.with_style(TextCtrlStyle::MultiLine | TextCtrlStyle::ReadOnly | TextCtrlStyle::Rich2)
+		.with_size(dialog.from_dip(Size::new(560, 380)))
+		.build();
+	// TRANSLATORS: Button that closes a window showing text
+	let close_button = Button::builder(&dialog).with_id(ID_CANCEL).with_label(&t("Close")).build();
+	dialog.set_escape_id(ID_CANCEL);
+	let content = BoxSizer::builder(Orientation::Vertical).build();
+	content.add(&text_ctrl, 1, SizerFlag::Expand | SizerFlag::All, padding);
+	add_single_button_footer(content, close_button);
+	dialog.set_sizer_and_fit(content, true);
+	dialog.centre();
+	text_ctrl.set_focus();
+	dialog.show_modal();
+	dialog.destroy();
+}
+
 /// Binds `ctrl`'s Enter key (`TEXT_ENTER`) to confirm `dialog` as if its OK button were
 /// clicked. For single-field entry dialogs where pressing Enter in the control should
 /// submit the dialog.

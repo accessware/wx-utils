@@ -68,6 +68,7 @@ This is behind the `global-hotkeys` feature. Only Windows is implemented. On oth
 * `prompt_number` shows a dialog with a labeled spin control, and returns the value entered, or `None` if the user cancels.
 * `prompt_text` shows a single-line text entry dialog, and returns the trimmed value, or `None` if the user cancels or leaves it blank.
 * `show_error`, `show_warning` and `show_info` show a modal message dialog with the matching icon, centred on its parent.
+* `show_text` shows text in a read-only box with a Close button, such as a report before it's sent or a document's details. The box has the focus, so a screen reader user can read it line by line.
 
 ### Running code on the UI thread
 
@@ -83,6 +84,8 @@ This is behind the `global-hotkeys` feature. Only Windows is implemented. On oth
 * `ask` shows a dialog of your own, such as `confirm`, over the progress window, and hands its result back to the work.
 
 One progress window shows at a time. A run started while another one shows waits until that one has ended.
+
+`progress::run_without_estimate` is the same, without the estimate of the time remaining. Use it for work whose length can't be known, such as a single network request, where the window would otherwise show "Remaining time: unknown" the whole time.
 
 To try it, run `cargo run --example progress`. The example shows fake downloads.
 

@@ -2,12 +2,13 @@
 //!
 //! "Download" connects (the bar pulses), asks whether to go on, then counts to 50 with the bar
 //! moving. "Download twice" starts two runs at once; the second waits for the first. Each run
-//! logs how it ended and moves focus to the log.
+//! logs how it ended and moves focus to the log. "Send" waits two seconds behind
+//! `run_without_estimate`, like a single network request, so the window shows no time estimate.
 use std::{thread, time::Duration};
 
 use wx_utils::{
 	confirm,
-	progress::{Progress, run_with_progress},
+	progress::{Progress, run_with_progress, run_without_estimate},
 };
 use wxdragon::prelude::*;
 
@@ -51,6 +52,7 @@ fn main() {
 		let panel = Panel::builder(&frame).build();
 		let once = Button::builder(&panel).with_label("&Download").build();
 		let twice = Button::builder(&panel).with_label("Download &twice").build();
+		let send = Button::builder(&panel).with_label("&Send").build();
 		let log = TextCtrl::builder(&panel)
 			.with_style(TextCtrlStyle::MultiLine | TextCtrlStyle::ReadOnly)
 			.with_size(Size::new(400, 200))
@@ -60,9 +62,22 @@ fn main() {
 			download(&frame, log, "first.epub");
 			download(&frame, log, "second.epub");
 		});
+		send.on_click(move |_| {
+			run_without_estimate(
+				&frame,
+				"Sending",
+				"Sending the report...",
+				|_| thread::sleep(Duration::from_secs(2)),
+				move |(), ended| {
+					log.append_text(&format!("sent ({ended:?})\n"));
+					log.set_focus();
+				},
+			);
+		});
 		let sizer = BoxSizer::builder(Orientation::Vertical).build();
 		sizer.add(&once, 0, SizerFlag::All, 10);
 		sizer.add(&twice, 0, SizerFlag::All, 10);
+		sizer.add(&send, 0, SizerFlag::All, 10);
 		sizer.add(&log, 1, SizerFlag::Expand | SizerFlag::All, 10);
 		panel.set_sizer(sizer, true);
 		frame.set_size(Size::new(450, 350));

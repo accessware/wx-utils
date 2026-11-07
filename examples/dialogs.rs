@@ -1,7 +1,9 @@
 //! The message and question dialogs, for trying them by hand.
 //!
-//! "Follow request" asks with Accept, Reject and Cancel, and logs the answer. "Information" shows a message centred on the window.
-use wx_utils::{ask, show_info};
+//! "Follow request" asks with Accept, Reject and Cancel, and logs the answer. "Information" shows a message centred on the window. "Text" shows a long text in a read-only box.
+use std::fmt::Write as _;
+
+use wx_utils::{ask, show_info, show_text};
 use wxdragon::prelude::*;
 
 fn main() {
@@ -10,6 +12,7 @@ fn main() {
 		let panel = Panel::builder(&frame).build();
 		let request = Button::builder(&panel).with_label("&Follow request").build();
 		let info = Button::builder(&panel).with_label("&Information").build();
+		let text = Button::builder(&panel).with_label("&Text").build();
 		let log = TextCtrl::builder(&panel)
 			.with_style(TextCtrlStyle::MultiLine | TextCtrlStyle::ReadOnly)
 			.with_size(Size::new(400, 200))
@@ -21,9 +24,17 @@ fn main() {
 			log.set_focus();
 		});
 		info.on_click(move |_| show_info(&frame, "Nothing new since you last looked.", "Information"));
+		text.on_click(move |_| {
+			let mut lines = String::new();
+			for n in 1..=2000 {
+				let _ = writeln!(lines, "12:00:{:02} INFO line {n} of a long log", n % 60);
+			}
+			show_text(&frame, "Log", &lines);
+		});
 		let sizer = BoxSizer::builder(Orientation::Vertical).build();
 		sizer.add(&request, 0, SizerFlag::All, 10);
 		sizer.add(&info, 0, SizerFlag::All, 10);
+		sizer.add(&text, 0, SizerFlag::All, 10);
 		sizer.add(&log, 1, SizerFlag::Expand | SizerFlag::All, 10);
 		panel.set_sizer(sizer, true);
 		frame.set_size(Size::new(450, 350));
