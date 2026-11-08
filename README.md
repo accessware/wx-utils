@@ -45,6 +45,15 @@ let rate = form.labeled(&t("&Rate:"), |parent| Slider::builder(parent).build());
 let book_only = form.check_box(&t("For this &book only"));
 ```
 
+### Sliders
+
+A Windows slider lowers its value when you press Up or Page Up, because it treats every slider as if it stood upright. `natural_slider_keys` makes Up and Right raise it, Down and Left lower it, Page Up and Page Down move a tenth of the range, and Home and End go to the ends, on every platform. Setting a slider's value from code fires no event, so the closure you pass gets each new value, for anything that follows the slider.
+
+```rust
+let rate = Slider::builder(&dialog).with_value(50).with_min_value(0).with_max_value(100).build();
+natural_slider_keys(rate, |value| log::debug!("rate {value}"));
+```
+
 ### Why `confirm` instead of a Yes/No `MessageDialog`
 
 On Windows, `MessageDialogStyle::YesNo` is the native task dialog, and the *operating system* labels its buttons, in the system language. An app translated into French and running on English Windows shows a French question above English Yes and No buttons. `confirm` builds real `Button`s labeled through patois, so they read in the app's own language like the rest of the dialog.
