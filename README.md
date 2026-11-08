@@ -27,6 +27,24 @@ Each `build_*_buttons` function has an `_on` variant that parents the buttons to
 
 The Cancel label is translated automatically (see [Translation](#translation)). You only supply the OK label, because it varies by dialog, for example "OK" or "Go".
 
+### Laying out a form
+
+`form::Form` adds a dialog's or panel's controls top to bottom, with `dialog_padding` between everything:
+
+* `labeled` puts a label beside the control it names. Labelled rows in a row line up in two columns.
+* `labeled_above` puts the label on a line of its own, above a control that needs the whole width, such as a list or a multi-line text box.
+* `add` and `check_box` add a control across the whole width.
+* `sizer` gives the layout to a footer such as `add_ok_cancel_footer`, and then to the parent's `set_sizer_and_fit`.
+
+You build each control in a closure the form calls after it creates the label. A screen reader names a control after the label created just before it, and the tab order follows the order of creation, so both come out right without extra work.
+
+```rust
+let form = Form::new(dialog);
+let voice = form.labeled(&t("&Voice:"), |parent| Choice::builder(parent).build());
+let rate = form.labeled(&t("&Rate:"), |parent| Slider::builder(parent).build());
+let book_only = form.check_box(&t("For this &book only"));
+```
+
 ### Why `confirm` instead of a Yes/No `MessageDialog`
 
 On Windows, `MessageDialogStyle::YesNo` is the native task dialog, and the *operating system* labels its buttons, in the system language. An app translated into French and running on English Windows shows a French question above English Yes and No buttons. `confirm` builds real `Button`s labeled through patois, so they read in the app's own language like the rest of the dialog.

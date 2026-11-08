@@ -1,6 +1,7 @@
 mod about;
 mod dialogs;
 mod duration;
+pub mod form;
 #[cfg(feature = "global-hotkeys")]
 pub mod global_hotkeys;
 mod ids;

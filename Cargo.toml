@@ -1,6 +1,6 @@
 [package]
 name = "wx-utils"
-version = "0.5.1"
+version = "0.5.2"
 description = "Translated dialogs, progress windows, shortcut editing, global hotkeys, and other helpers for desktop apps built with wxDragon."
 license = "MIT"
 readme = "README.md"
