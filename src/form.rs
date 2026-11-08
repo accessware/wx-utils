@@ -1,4 +1,4 @@
-//! Laying out a dialog's controls: labels beside the controls they name, lined up in two columns, with [`dialog_padding`](crate::dialog_padding) between everything.
+//! Laying out a dialog's controls: labels beside the controls they name, lined up in two columns, with [`dialog_padding`] between everything.
 
 use std::cell::RefCell;
 

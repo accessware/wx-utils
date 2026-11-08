@@ -44,6 +44,10 @@ fn us_punctuation_for_scan_code(scan_code: u32) -> Option<char> {
 /// by the characters the layout gives them and moves a menu's shortcuts to match, so there is
 /// nothing to look up and this is always `None`.
 #[must_use]
+#[cfg_attr(
+	target_os = "macos",
+	allow(clippy::missing_const_for_fn, reason = "only macOS's body could be const, and the others look the key up")
+)]
 pub fn us_punctuation_at(raw_key_flags: u32) -> Option<char> {
 	#[cfg(windows)]
 	{
