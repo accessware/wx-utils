@@ -71,6 +71,8 @@ Your app keeps its own action type and its own storage. Implement `shortcuts::Sh
 
 The scope also decides what Reset All covers: every tab in the same mode, or only the Global tab itself.
 
+A chord names its key by the character it types, so on another layout a punctuation shortcut can sit on a key that types something else. On a Hungarian keyboard, the key where a US one has `;` types `é`, and GTK reports `Shift+,` as `<` on any layout. `shortcuts::us_punctuation_at` takes a key event's `get_raw_key_flags()` and gives the punctuation that key types on a US keyboard, on Windows and Linux. Match on it when a key's own character matches no shortcut, and return `true` from `ShortcutModel::matches_by_place`, so the list stops marking those chords as missing from the layout.
+
 This is behind the `shortcuts` feature, which is off by default because it pulls in [live-region](https://github.com/accessware/live-region) for the announcements. The chord type is [key-chord](https://github.com/accessware/key-chord), re-exported as `shortcuts::KeyChord`.
 
 ### Global hotkeys

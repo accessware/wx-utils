@@ -39,6 +39,7 @@ mod capture;
 mod layout;
 
 pub use key_chord::KeyChord;
+pub use layout::us_punctuation_at;
 
 /// When a tab's shortcuts are active, which is what decides whether two bindings can collide:
 /// two chords only conflict if their tabs can be active at the same time.
@@ -110,6 +111,13 @@ pub trait ShortcutModel: Clone {
 	/// That is every tab in the same [`TabScope::Mode`] as `tab`, or only `tab` itself when it is
 	/// [`TabScope::Global`].
 	fn reset_all(&mut self, tab: usize);
+
+	/// Whether the app also matches a punctuation chord by the key's place on a US keyboard, with
+	/// [`us_punctuation_at`]. Then such a chord can be pressed on any layout, and the list doesn't
+	/// mark it as missing from the one in use. Off by default.
+	fn matches_by_place(&self) -> bool {
+		false
+	}
 }
 
 /// Per-tab list refreshers, called after every edit.
@@ -320,7 +328,8 @@ fn format_list_item<M: ShortcutModel>(model: &M, tab: usize, action: M::Action) 
 	let chord = model.chord(tab, action);
 	let chord_str = chord.as_ref().map_or_else(|| t("None"), KeyChord::to_display_string);
 	// A global hotkey is registered through the key `VkKeyScan` names instead, so it is left alone.
-	let stranded = model.tab_scope(tab) != TabScope::Global && chord.as_ref().is_some_and(|c| !layout::is_typable(c));
+	let stranded = model.tab_scope(tab) != TabScope::Global
+		&& chord.as_ref().is_some_and(|c| !layout::is_typable(c, model.matches_by_place()));
 	let chord_str = if stranded {
 		// TRANSLATORS: A shortcut in the Customize Keyboard Shortcuts list whose key is not on the keyboard layout in use, so it cannot be pressed. The {} placeholder is replaced with the shortcut, for example "Ctrl+;".
 		t("{} (not on this keyboard layout)").replace("{}", &chord_str)
