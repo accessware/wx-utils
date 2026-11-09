@@ -9,7 +9,6 @@ mod menu;
 pub mod progress;
 #[cfg(feature = "shortcuts")]
 pub mod shortcuts;
-mod slider;
 mod ui_thread;
 
 pub use about::AboutBoxBuilder;
@@ -20,5 +19,4 @@ pub use dialogs::{
 };
 pub use duration::{format_duration_ms, format_duration_seconds};
 pub use menu::{menu_label, set_menu_item_label};
-pub use slider::natural_slider_keys;
 pub use ui_thread::post_to_ui;

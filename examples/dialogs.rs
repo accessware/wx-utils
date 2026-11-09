@@ -3,9 +3,7 @@
 //! "Follow request" asks with Accept, Reject and Cancel, and logs the answer. "Information" shows a message centred on the window. "Text" shows a long text in a read-only box. "Form" lays out a dialog with `Form` and logs what was chosen.
 use std::fmt::Write as _;
 
-use wx_utils::{
-	add_ok_cancel_footer, ask, build_ok_cancel_buttons, form::Form, natural_slider_keys, show_info, show_text,
-};
+use wx_utils::{add_ok_cancel_footer, ask, build_ok_cancel_buttons, form::Form, show_info, show_text};
 use wxdragon::prelude::*;
 
 fn main() {
@@ -66,7 +64,6 @@ fn show_form(parent: &Frame) -> Option<String> {
 	let rate = form.labeled("&Rate:", |parent| {
 		Slider::builder(parent).with_value(50).with_min_value(0).with_max_value(100).build()
 	});
-	natural_slider_keys(rate, |_| {});
 	let notes = form.labeled_above("&Notes:", true, |parent| {
 		TextCtrl::builder(parent).with_style(TextCtrlStyle::MultiLine).with_size(Size::new(300, 80)).build()
 	});
