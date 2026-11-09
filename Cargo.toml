@@ -19,7 +19,7 @@ global-hotkeys = ["dep:key-chord", "dep:windows"]
 [dependencies]
 key-chord = { version = "0.2.2", optional = true }
 live-region = { version = "0.3.3", optional = true }
-patois = "0.3.0"
+patois = "0.3.2"
 wxdragon = { version = "0.9.24", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
