@@ -191,8 +191,9 @@ fn notice_destruction(dialog: &ProgressDialog) {
 	// only used to bind an event and does not own the dialog.
 	let handler = unsafe { Dialog::from_ptr(dialog_ptr.cast()) };
 	handler.bind_internal(EventType::DESTROY, move |event| {
-		// Destroy events from the dialog's own children reach it too.
-		if event.get_event_object().is_some_and(|object| object.as_ptr() == dialog_ptr) {
+		// Destroy events from the dialog's own children reach it too. The raw pointer, since
+		// `get_event_object` gives a window that is already being deleted a null one.
+		if event.event_object_ptr() == dialog_ptr {
 			post_to_ui(window_destroyed);
 		}
 		event.skip(true);

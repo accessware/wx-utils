@@ -35,3 +35,7 @@ all = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+
+# Until a release has Event::event_object_ptr, which progress.rs compares a destroy event's source with.
+[patch.crates-io]
+wxdragon = { git = "https://github.com/AllenDang/wxDragon", rev = "1d56121" }
