@@ -10,6 +10,7 @@ pub mod progress;
 #[cfg(feature = "shortcuts")]
 pub mod shortcuts;
 mod ui_thread;
+pub mod window_geometry;
 
 pub use about::AboutBoxBuilder;
 pub use dialogs::{

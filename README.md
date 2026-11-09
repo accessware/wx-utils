@@ -45,6 +45,23 @@ let rate = form.labeled(&t("&Rate:"), |parent| Slider::builder(parent).build());
 let book_only = form.check_box(&t("For this &book only"));
 ```
 
+### Window geometry
+
+`window_geometry` puts a frame back where the user left it. `apply_defaults` sets its size and smallest size in device-independent pixels before it's shown. `restore` moves it to the saved rectangle, still hidden, and maximizes it if it was. A window partly off the left or top edge stays there, and one whose monitor has gone keeps its size and is centred on the primary display. `capture` gives what to save as it closes. Its rectangle is `None` while the frame is maximized or minimized, so keep the one saved before, or un-maximizing loses the user's size.
+
+Where it's saved is up to the app:
+
+```rust
+window_geometry::apply_defaults(&frame, Size::new(800, 600), Size::new(400, 300));
+window_geometry::restore(&frame, WindowGeometry { rect: config.window_rect(), maximized: config.window_maximized() });
+// …and as the frame closes:
+let geometry = window_geometry::capture(&frame);
+config.set_window_maximized(geometry.maximized);
+if let Some(rect) = geometry.rect {
+	config.set_window_rect(rect);
+}
+```
+
 ### Why `confirm` instead of a Yes/No `MessageDialog`
 
 On Windows, `MessageDialogStyle::YesNo` is the native task dialog, and the *operating system* labels its buttons, in the system language. An app translated into French and running on English Windows shows a French question above English Yes and No buttons. `confirm` builds real `Button`s labeled through patois, so they read in the app's own language like the rest of the dialog.
