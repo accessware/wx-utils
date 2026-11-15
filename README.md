@@ -124,8 +124,29 @@ spawn_for(&dialog, async move {
 
 * `spawn_for` ties a task to a window and cancels it when the window is destroyed, so the task never touches a widget that's gone. Cancelling also cancels the `background` future it was waiting on.
 * `sleep` waits without holding up the UI thread, for polling loops.
-* `Queue` runs blocking work on a thread of its own, one job at a time in the order it was queued, for calls whose order matters, such as a favorite and the unfavorite after it.
 * A task is polled from a `post_to_ui` callback of its own, never from inside the code that spawned or woke it, which may still be borrowing what the task uses. Don't hold a `RefCell` borrow across an await, though: a modal dialog's event loop runs other tasks while it's open.
+
+#### Work that must run in order
+
+`background_blocking` runs each call on whichever thread is free, so two calls made one after the other can finish in either order. `tasks::Queue` runs blocking work on a thread of its own instead, one job at a time and in the order it was queued, for calls whose order matters, such as a favorite and the unfavorite after it:
+
+```rust
+let queue = Queue::new();
+spawn_for(&frame, {
+	let favorited = queue.run(move || client.favorite(&id));
+	let unfavorited = queue.run(move || client.unfavorite(&id));
+	async move {
+		show(favorited.await);
+		show(unfavorited.await);
+	}
+});
+```
+
+* `run` gives back a future for the job's output, which a task awaits like `background`'s. Tasks waiting on one queue wake in the order their jobs finished, which is the order they were queued.
+* `push` queues work nobody waits for, for work that reports back some other way, such as through a channel.
+* Dropping the future doesn't stop its job, since blocking work can't be interrupted. The job still runs in its turn, and its output is dropped.
+* A job that panics stops only itself. The jobs behind it still run, and `run`'s future hands the panic on to the task awaiting it.
+* Clones of a queue share its thread, which ends once every clone is dropped and the jobs already queued are done.
 
 ### Progress window
 
