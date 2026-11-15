@@ -124,6 +124,7 @@ spawn_for(&dialog, async move {
 
 * `spawn_for` ties a task to a window and cancels it when the window is destroyed, so the task never touches a widget that's gone. Cancelling also cancels the `background` future it was waiting on.
 * `sleep` waits without holding up the UI thread, for polling loops.
+* `Queue` runs blocking work on a thread of its own, one job at a time in the order it was queued, for calls whose order matters, such as a favorite and the unfavorite after it.
 * A task is polled from a `post_to_ui` callback of its own, never from inside the code that spawned or woke it, which may still be borrowing what the task uses. Don't hold a `RefCell` borrow across an await, though: a modal dialog's event loop runs other tasks while it's open.
 
 ### Progress window
