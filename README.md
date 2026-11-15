@@ -111,6 +111,21 @@ This is behind the `global-hotkeys` feature. Only Windows is implemented. On oth
 
 `post_to_ui` runs a closure on the UI thread from any other thread. `wxdragon::call_after` alone only queues it, and an idle event loop doesn't run the queue until the next event, such as the mouse moving. `post_to_ui` also wakes the loop, so a worker thread's result shows up at once.
 
+### Tasks on the UI thread
+
+With the `tasks` feature, `tasks::spawn_local` runs a future on the UI thread, so it can keep widgets and `Rc`s across its awaits. Work that would block the UI goes to a background thread with `background` (a future, run on a shared Tokio runtime) or `background_blocking` (a closure), and the task picks up on the UI thread when it's done:
+
+```rust
+spawn_for(&dialog, async move {
+	let accounts = background_blocking(move || client.followers(&id)).await;
+	list.show(&accounts);
+});
+```
+
+* `spawn_for` ties a task to a window and cancels it when the window is destroyed, so the task never touches a widget that's gone. Cancelling also cancels the `background` future it was waiting on.
+* `sleep` waits without holding up the UI thread, for polling loops.
+* A task is polled from a `post_to_ui` callback of its own, never from inside the code that spawned or woke it, which may still be borrowing what the task uses. Don't hold a `RefCell` borrow across an await, though: a modal dialog's event loop runs other tasks while it's open.
+
 ### Progress window
 
 `progress::run_with_progress` runs work on a worker thread behind a native progress window. When the work returns and the progress window is gone, it calls you back on the UI thread with the result, and whether the user pressed Cancel. By then the application's windows are enabled again, so the callback can open windows and move focus. The work gets a `Progress` handle:

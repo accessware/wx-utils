@@ -9,6 +9,8 @@ mod menu;
 pub mod progress;
 #[cfg(feature = "shortcuts")]
 pub mod shortcuts;
+#[cfg(feature = "tasks")]
+pub mod tasks;
 mod ui_thread;
 pub mod window_geometry;
 

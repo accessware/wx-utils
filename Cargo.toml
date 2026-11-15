@@ -15,11 +15,14 @@ translatable = true
 [features]
 shortcuts = ["dep:live-region", "dep:key-chord", "dep:windows"]
 global-hotkeys = ["dep:key-chord", "dep:windows"]
+tasks = ["dep:async-task", "dep:tokio"]
 
 [dependencies]
+async-task = { version = "4.7.1", optional = true }
 key-chord = { version = "0.2.2", optional = true }
 live-region = { version = "0.3.3", optional = true }
 patois = "0.3.2"
+tokio = { version = "1.53.3", optional = true, default-features = false, features = ["rt-multi-thread", "time"] }
 wxdragon = { version = "0.9.24", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
@@ -29,6 +32,10 @@ windows = { version = "0.62.2", optional = true, features = [
 	"Win32_UI_Input_KeyboardAndMouse",
 	"Win32_UI_WindowsAndMessaging",
 ] }
+
+[[example]]
+name = "tasks"
+required-features = ["tasks"]
 
 [lints.clippy]
 all = { level = "warn", priority = -1 }
