@@ -94,7 +94,7 @@ impl Visibility {
 	/// Returns whether there was one to ask. Exiting from the tray asks until there are none
 	/// left, since closing the frame under a modal dialog upsets wxWidgets.
 	// Off Windows there's never a dialog to know of, which leaves nothing to look at.
-	#[cfg_attr(not(windows), allow(clippy::unused_self, clippy::missing_const_for_fn))]
+	#[cfg_attr(not(windows), allow(clippy::unused_self, clippy::missing_const_for_fn, clippy::must_use_candidate))]
 	pub fn close_dialog(&self) -> bool {
 		#[cfg(windows)]
 		if let Some(dialog) = self.take_hidden_dialog().or_else(|| self.open_dialog()) {
@@ -105,6 +105,7 @@ impl Visibility {
 	}
 
 	/// Whether the frame, or the dialog over it, is the window in front.
+	#[must_use]
 	pub fn is_active(&self) -> bool {
 		#[cfg(windows)]
 		{
