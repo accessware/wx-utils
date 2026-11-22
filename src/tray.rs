@@ -104,6 +104,51 @@ impl Visibility {
 		false
 	}
 
+	/// Whether a dialog is open over the frame, shown or hidden with it. Only Windows can tell, so
+	/// elsewhere there never is one.
+	#[must_use]
+	#[cfg_attr(not(windows), allow(clippy::unused_self, clippy::missing_const_for_fn))]
+	pub fn has_dialog(&self) -> bool {
+		#[cfg(windows)]
+		{
+			self.hidden_dialog.get() != 0 || self.open_dialog().is_some()
+		}
+		#[cfg(not(windows))]
+		{
+			false
+		}
+	}
+
+	/// Hides the frame, and the dialog over it, whenever it's minimized and `enabled` says to, as
+	/// a "minimize to the tray" setting does. `hidden` runs first, such as to put up a [`Tray`]
+	/// icon to bring it back with. `enabled` is asked each time, so the setting can change while
+	/// the app runs.
+	pub fn hide_when_minimized(self: &Rc<Self>, enabled: impl Fn() -> bool + 'static, hidden: impl Fn() + 'static) {
+		let visibility = Rc::downgrade(self);
+		let hide: Rc<dyn Fn()> = Rc::new(move || {
+			let Some(visibility) = visibility.upgrade() else {
+				return;
+			};
+			// A frame hidden while minimized still reports itself minimized, so without asking
+			// whether it's shown, every idle event would hide it again.
+			if visibility.frame.is_iconized() && visibility.frame.is_shown() && enabled() {
+				hidden();
+				visibility.hide();
+			}
+		});
+		// Minimizing arrives as a size event on some platforms, and only shows by the next idle
+		// one on others.
+		let on_size = Rc::clone(&hide);
+		self.frame.on_size(move |event| {
+			on_size();
+			event.skip(true);
+		});
+		self.frame.on_idle(move |event| {
+			hide();
+			event.skip(true);
+		});
+	}
+
 	/// Whether the frame, or the dialog over it, is the window in front.
 	#[must_use]
 	pub fn is_active(&self) -> bool {
@@ -144,9 +189,31 @@ struct Inner {
 	/// Kept for as long as the icon shows it.
 	menu: RefCell<Option<Menu>>,
 	exit: Callback,
+	/// The tooltip and picture, to put back after [`Tray::hide`].
+	name: String,
+	picture: Option<Picture>,
 }
 
 impl Inner {
+	/// Shows the picture in the notification area, or the stock information icon without one.
+	fn show(&self) {
+		match &self.picture {
+			Some(Picture::Bitmap(bitmap)) => {
+				self.icon.set_icon(bitmap, &self.name);
+			}
+			Some(Picture::Bundle(bundle)) => {
+				self.icon.set_icon_bundle(bundle, &self.name);
+			}
+			None => {
+				if let Some(bitmap) =
+					ArtProvider::get_bitmap(ArtId::Information, ArtClient::Menu, Some(Size::new(16, 16)))
+				{
+					self.icon.set_icon(&bitmap, &self.name);
+				}
+			}
+		}
+	}
+
 	fn remove(&self) {
 		if let Some(mut menu) = self.menu.borrow_mut().take() {
 			menu.destroy_menu();
@@ -159,7 +226,7 @@ impl Tray {
 	/// Starts an icon for the app called `name`, which its tooltip shows.
 	#[must_use]
 	pub fn builder(name: &str) -> TrayBuilder {
-		TrayBuilder { name: name.to_owned(), icon: None, on_click: None, on_show_hide: None }
+		TrayBuilder { name: name.to_owned(), icon: None, show_hide: None, on_click: None, on_show_hide: None }
 	}
 
 	/// What the menu's Exit does. It can be set after the icon is up, once whatever it closes
@@ -173,12 +240,50 @@ impl Tray {
 	pub fn remove(&self) {
 		self.inner.remove();
 	}
+
+	/// Takes the icon out of the notification area for now, to put back with
+	/// [`show`](Self::show), for an icon only shown while the app is hidden. Unlike
+	/// [`remove`](Self::remove), it's safe from the icon's own click or menu.
+	pub fn hide(&self) {
+		if self.menu_open() {
+			self.inner.icon.remove_icon();
+		}
+	}
+
+	/// Puts back an icon [`hide`](Self::hide) took out.
+	pub fn show(&self) {
+		if self.menu_open() {
+			self.inner.show();
+		}
+	}
+
+	/// Shows a notification from the icon for `timeout` milliseconds, with wxWidgets' balloon
+	/// `flags`, such as `wxICON_INFORMATION`. Only Windows shows one, and only while the icon is
+	/// up.
+	pub fn show_balloon(&self, title: &str, text: &str, timeout: u32, flags: i32) {
+		if self.menu_open() {
+			self.inner.icon.show_balloon(title, text, timeout, flags, None);
+		}
+	}
+
+	/// Whether the icon is still up, rather than removed.
+	fn menu_open(&self) -> bool {
+		self.inner.menu.borrow().is_some()
+	}
+}
+
+/// What the icon shows: one picture, or several sizes to pick from.
+enum Picture {
+	Bitmap(Bitmap),
+	Bundle(BitmapBundle),
 }
 
 /// Sets up a [`Tray`] before it's shown.
 pub struct TrayBuilder {
 	name: String,
-	icon: Option<Bitmap>,
+	icon: Option<Picture>,
+	/// The Show/Hide item's label and help, when the app gives its own.
+	show_hide: Option<(String, String)>,
 	on_click: Option<Box<dyn Fn()>>,
 	on_show_hide: Option<Box<dyn Fn()>>,
 }
@@ -188,7 +293,22 @@ impl TrayBuilder {
 	/// the stock information icon stands in.
 	#[must_use]
 	pub fn icon(mut self, icon: Bitmap) -> Self {
-		self.icon = Some(icon);
+		self.icon = Some(Picture::Bitmap(icon));
+		self
+	}
+
+	/// The icon to show, from a bundle of sizes, so it stays sharp at any display scaling.
+	#[must_use]
+	pub fn icon_bundle(mut self, icon: BitmapBundle) -> Self {
+		self.icon = Some(Picture::Bundle(icon));
+		self
+	}
+
+	/// Labels the Show/Hide item `label`, with `help` for the status bar, such as "&Restore" for
+	/// an icon only shown while the app is hidden.
+	#[must_use]
+	pub fn show_hide_label(mut self, label: &str, help: &str) -> Self {
+		self.show_hide = Some((label.to_owned(), help.to_owned()));
 		self
 	}
 
@@ -209,18 +329,15 @@ impl TrayBuilder {
 	/// Puts the icon in the notification area, and has it taken out again when `frame` closes.
 	#[must_use]
 	pub fn build(self, frame: &Frame) -> Tray {
+		let (show_hide_label, show_hide_help) =
+			self.show_hide.unwrap_or_else(|| (t("&Show/Hide"), t("Show or hide the window")));
 		let mut menu = Menu::builder()
-			.append_item(ID_SHOW_HIDE, &t("&Show/Hide"), &t("Show or hide the window"))
+			.append_item(ID_SHOW_HIDE, &show_hide_label, &show_hide_help)
 			.append_separator()
 			.append_item(ID_EXIT, &t("E&xit"), &t("Close the app"))
 			.build();
 		let icon = TaskBarIcon::builder().build();
 		icon.set_popup_menu(&mut menu);
-		let bitmap =
-			self.icon.or_else(|| ArtProvider::get_bitmap(ArtId::Information, ArtClient::Menu, Some(Size::new(16, 16))));
-		if let Some(bitmap) = bitmap {
-			icon.set_icon(&bitmap, &self.name);
-		}
 		let exit: Callback = Rc::default();
 		let menu_exit = Rc::clone(&exit);
 		let show_hide = self.on_show_hide;
@@ -247,7 +364,8 @@ impl TrayBuilder {
 			#[cfg(not(any(windows, target_os = "linux")))]
 			drop(click);
 		}
-		let inner = Rc::new(Inner { icon, menu: RefCell::new(Some(menu)), exit });
+		let inner = Rc::new(Inner { icon, menu: RefCell::new(Some(menu)), exit, name: self.name, picture: self.icon });
+		inner.show();
 		let closing = Rc::downgrade(&inner);
 		frame.on_close(move |event| {
 			// The icon would otherwise keep the app running once the window is gone.

@@ -99,8 +99,17 @@ This is behind the `global-hotkeys` feature. Only Windows is implemented. On oth
 * `show_or_hide` hides the app whenever it's shown. Use it for the tray menu, which takes the foreground itself, so `toggle` could never tell the app was in front.
 * `come_forward` shows, restores and raises the app, back onto the dialog the user was last in. Use it for clicking the tray icon, or when a second copy of the app starts.
 * `close_dialog` asks the open dialog to close, as Escape would, and returns whether there was one. To exit from the tray, call it until it returns `false`, then close the frame, since closing the frame under a modal dialog upsets wxWidgets.
+* `has_dialog` says whether a dialog is open over the frame, shown or hidden with it.
+* `hide_when_minimized` hides the app whenever it's minimized and a closure you give says to, for a "minimize to the tray" setting. Another closure runs first, such as to put up the tray icon.
 
-`tray::Tray::builder(name)` puts the app's icon in the notification area, with a translated Show/Hide and Exit menu. Give it `on_click` and `on_show_hide`, then `build(&frame)`. Set what Exit does with `on_exit`, which can come later, once whatever it closes exists. The icon takes itself out when the frame closes, since an icon left there keeps the process running. Without an `icon`, the stock information icon stands in.
+`tray::Tray::builder(name)` puts the app's icon in the notification area, with a translated Show/Hide and Exit menu. Give it `on_click` and `on_show_hide`, then `build(&frame)`. Set what Exit does with `on_exit`, which can come later, once whatever it closes exists. The icon takes itself out when the frame closes, since an icon left there keeps the process running.
+
+* `icon` or `icon_bundle` sets the picture, one size or several. Without either, the stock information icon stands in.
+* `show_hide_label` relabels Show/Hide, such as "&Restore" for an icon that's only up while the app is hidden.
+* `hide` takes the icon away for now and `show` puts it back, for just such an icon. Unlike `remove`, they're safe from the icon's own click or menu.
+* `show_balloon` shows a notification from the icon, which only Windows does.
+
+A click on the icon is the button coming up on Windows and going down on Linux. A macOS status item only has its menu.
 
 ```rust
 use std::rc::Rc;
