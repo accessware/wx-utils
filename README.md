@@ -91,6 +91,31 @@ The callback runs on the hotkey thread, so pass the value along (for example, do
 
 This is behind the `global-hotkeys` feature. Only Windows is implemented. On other platforms, every chord comes back unregistered.
 
+### Hiding to the tray
+
+`tray::Visibility` hides your main frame and brings it back, along with whichever dialog the user was in. Hiding a frame on its own leaves its dialogs on screen.
+
+* `toggle` hides the app when it's the window in front, and otherwise brings it forward. Bind a global hotkey to it.
+* `show_or_hide` hides the app whenever it's shown. Use it for the tray menu, which takes the foreground itself, so `toggle` could never tell the app was in front.
+* `come_forward` shows, restores and raises the app, back onto the dialog the user was last in. Use it for clicking the tray icon, or when a second copy of the app starts.
+* `close_dialog` asks the open dialog to close, as Escape would, and returns whether there was one. To exit from the tray, call it until it returns `false`, then close the frame, since closing the frame under a modal dialog upsets wxWidgets.
+
+`tray::Tray::builder(name)` puts the app's icon in the notification area, with a translated Show/Hide and Exit menu. Give it `on_click` and `on_show_hide`, then `build(&frame)`. Set what Exit does with `on_exit`, which can come later, once whatever it closes exists. The icon takes itself out when the frame closes, since an icon left there keeps the process running. Without an `icon`, the stock information icon stands in.
+
+```rust
+use std::rc::Rc;
+use wx_utils::tray::{Tray, Visibility};
+
+let visibility = Rc::new(Visibility::new(frame));
+let (clicked, menu) = (Rc::clone(&visibility), Rc::clone(&visibility));
+let tray = Tray::builder("My App")
+	.on_click(move || clicked.come_forward())
+	.on_show_hide(move || menu.show_or_hide())
+	.build(&frame);
+```
+
+This is behind the `tray` feature. The dialog handling, and telling whether the app is in front, are Windows only. On other platforms the frame is shown and hidden alone, and the app counts as in front when the frame has focus.
+
 ### Menus
 
 * `menu_label` joins an item's text and its shortcut into the `"Open	Ctrl+O"` form that wx expects. An empty shortcut gives back a bare label instead of one with a trailing tab.

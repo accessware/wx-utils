@@ -1,7 +1,7 @@
 [package]
 name = "wx-utils"
 version = "0.5.2"
-description = "Translated dialogs, progress windows, shortcut editing, global hotkeys, and other helpers for desktop apps built with wxDragon."
+description = "Translated dialogs, progress windows, shortcut editing, global hotkeys, a tray icon, and other helpers for desktop apps built with wxDragon."
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/accessware/wx-utils"
@@ -16,6 +16,7 @@ translatable = true
 shortcuts = ["dep:live-region", "dep:key-chord", "dep:windows"]
 global-hotkeys = ["dep:key-chord", "dep:windows"]
 tasks = ["dep:async-task", "dep:tokio"]
+tray = ["dep:windows"]
 
 [dependencies]
 async-task = { version = "4.7.1", optional = true }
