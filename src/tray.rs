@@ -93,6 +93,8 @@ impl Visibility {
 	/// Asks the dialog open over the frame, shown or hidden with it, to close, as Escape would.
 	/// Returns whether there was one to ask. Exiting from the tray asks until there are none
 	/// left, since closing the frame under a modal dialog upsets wxWidgets.
+	// Off Windows there's never a dialog to know of, which leaves nothing to look at.
+	#[cfg_attr(not(windows), allow(clippy::unused_self, clippy::missing_const_for_fn))]
 	pub fn close_dialog(&self) -> bool {
 		#[cfg(windows)]
 		if let Some(dialog) = self.take_hidden_dialog().or_else(|| self.open_dialog()) {
@@ -235,7 +237,14 @@ impl TrayBuilder {
 			_ => {}
 		});
 		if let Some(click) = self.on_click {
+			// Windows reports a click as the button coming up, and Linux only as it going down. A
+			// macOS status item has its menu, and no clicks.
+			#[cfg(windows)]
 			icon.on_left_up(move |_| click());
+			#[cfg(target_os = "linux")]
+			icon.on_left_down(move |_| click());
+			#[cfg(not(any(windows, target_os = "linux")))]
+			drop(click);
 		}
 		let inner = Rc::new(Inner { icon, menu: RefCell::new(Some(menu)), exit });
 		let closing = Rc::downgrade(&inner);
