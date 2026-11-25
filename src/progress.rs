@@ -3,11 +3,11 @@
 //! [`run_with_progress`] shows the window, runs the work and reports back on the UI thread. One
 //! window shows at a time: a run started while another shows waits for it.
 use std::{
-	cell::RefCell,
+	cell::{Cell, RefCell},
 	ptr,
 	sync::{Arc, Mutex, PoisonError},
 	thread,
-	time::Duration,
+	time::{Duration, Instant},
 };
 
 use wxdragon::{ffi, prelude::*, window::WxWidget};
@@ -26,6 +26,8 @@ use lifecycle::ProgressLifecycle;
 use queue::RunQueue;
 
 const UPDATE_INTERVAL: Duration = Duration::from_millis(200);
+/// Updates are posted every [`UPDATE_INTERVAL`], so a longer gap means the UI thread was busy elsewhere while the window showed.
+const STALL: Duration = Duration::from_secs(1);
 
 type Start = Box<dyn FnOnce()>;
 type OnEnd = Box<dyn FnOnce(Ended)>;
@@ -35,6 +37,7 @@ thread_local! {
 	static RUNS: RefCell<RunQueue<Start>> = const { RefCell::new(RunQueue::new()) };
 	static ON_END: RefCell<Option<OnEnd>> = const { RefCell::new(None) };
 	static ENDING: RefCell<Ending> = const { RefCell::new(Ending::new()) };
+	static LAST_UPDATE: Cell<Option<Instant>> = const { Cell::new(None) };
 }
 
 /// How a run ended.
@@ -117,9 +120,12 @@ fn submit<T: Send + 'static>(
 ) {
 	let parent = ParentWindow::new(parent);
 	let (title, message) = (title.to_owned(), message.to_owned());
+	tracing::debug!(%title, estimate, "progress run submitted");
 	let start: Start = Box::new(move || begin(parent, &title, &message, estimate, work, done));
 	if let Some(start) = RUNS.with_borrow_mut(|runs| runs.submit(start)) {
 		start();
+	} else {
+		tracing::info!("progress run waits for the window of another run to close");
 	}
 }
 
@@ -135,7 +141,11 @@ fn begin<T: Send + 'static>(
 	if estimate {
 		style |= ProgressDialogStyle::RemainingTime;
 	}
+	tracing::debug!(%title, "building progress window");
+	let building = Instant::now();
 	let dialog = ProgressDialog::builder(&parent, title, message, 100).with_style(style).build();
+	tracing::info!(%title, build_ms = building.elapsed().as_millis(), created = !dialog.handle_ptr().is_null(), "progress window built");
+	LAST_UPDATE.set(Some(Instant::now()));
 	ENDING.set(Ending::new());
 	notice_destruction(&dialog);
 	DIALOG.with(|lifecycle| lifecycle.set(dialog));
@@ -151,7 +161,10 @@ fn begin<T: Send + 'static>(
 	spawn_heartbeat(Arc::clone(&shared));
 	thread::spawn(move || {
 		let _end = EndOnDrop(Arc::clone(&shared));
+		let working = Instant::now();
+		tracing::debug!("progress work started");
 		let value = work(&Progress::new(shared));
+		tracing::info!(work_ms = working.elapsed().as_millis(), "progress work returned");
 		*worker_result.lock().unwrap_or_else(PoisonError::into_inner) = Some(value);
 	});
 }
@@ -168,6 +181,7 @@ impl Drop for EndOnDrop {
 }
 
 fn end_run(shared: Arc<Shared>) {
+	tracing::debug!(cancelled = shared.is_cancelled(), "closing progress window");
 	DIALOG.with(|lifecycle| {
 		lifecycle.finish(Box::new(move || {
 			DIALOG.with(ProgressLifecycle::clear);
@@ -201,12 +215,15 @@ fn notice_destruction(dialog: &ProgressDialog) {
 }
 
 fn window_destroyed() {
+	tracing::debug!("progress window destroyed");
 	if let Some(ended) = ENDING.with_borrow_mut(Ending::window_destroyed) {
 		finish_run(ended);
 	}
 }
 
 fn finish_run(ended: Ended) {
+	tracing::info!(?ended, "progress run ended");
+	LAST_UPDATE.set(None);
 	if let Some(on_end) = ON_END.take() {
 		on_end(ended);
 	}
@@ -234,6 +251,12 @@ fn refresh(shared: &Shared) {
 	if !shared.is_running() {
 		return;
 	}
+	let now = Instant::now();
+	if let Some(gap) = LAST_UPDATE.replace(Some(now)).map(|last| now - last)
+		&& gap >= STALL
+	{
+		tracing::warn!(gap_ms = gap.as_millis(), "progress window went without an update");
+	}
 	DIALOG.with(|lifecycle| {
 		let Some(update) = lifecycle.begin_update() else {
 			return;
@@ -244,6 +267,7 @@ fn refresh(shared: &Shared) {
 			.percent()
 			.map_or_else(|| dialog.pulse(message.as_deref()), |percent| dialog.update(percent, message.as_deref()));
 		if !keep_going {
+			tracing::info!("progress window cancelled");
 			shared.cancel();
 			lifecycle.clear();
 		}

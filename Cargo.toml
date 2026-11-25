@@ -24,6 +24,7 @@ key-chord = { version = "0.2.2", optional = true }
 live-region = { version = "0.3.3", optional = true }
 patois = "0.3.3"
 tokio = { version = "1.54.1", optional = true, default-features = false, features = ["rt-multi-thread", "sync", "time"] }
+tracing = { version = "0.1.44", default-features = false, features = ["std"] }
 wxdragon = { version = "0.9.25", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
