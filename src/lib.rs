@@ -5,6 +5,8 @@ pub mod form;
 #[cfg(feature = "global-hotkeys")]
 pub mod global_hotkeys;
 mod ids;
+#[cfg(target_os = "macos")]
+pub mod mac;
 mod menu;
 pub mod progress;
 #[cfg(feature = "shortcuts")]

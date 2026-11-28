@@ -130,6 +130,10 @@ This is behind the `tray` feature. The dialog handling, and telling whether the 
 * `menu_label` joins an item's text and its shortcut into the `"Open	Ctrl+O"` form that wx expects. An empty shortcut gives back a bare label instead of one with a trailing tab.
 * `set_menu_item_label` relabels an existing item in a `MenuBar`, and does nothing if the ID isn't there, so you can relabel a menu that varies by platform in one pass.
 
+### Recent documents on macOS
+
+`mac::note_recent_document` adds a file to macOS's recent documents, which the Dock icon's menu and Apple menu > Recent Items list. wxWidgets has no way to reach them. macOS lists only files of a type the app's `Info.plist` declares in `CFBundleDocumentTypes`.
+
 ### Durations
 
 `format_duration_seconds` and `format_duration_ms` write a duration as a localized list of its nonzero parts, such as "1 hour, 5 minutes, 3 seconds". They use words instead of `1:05:03` because screen readers read this text aloud, and a colon-separated form is likely to be read as a time of day.
